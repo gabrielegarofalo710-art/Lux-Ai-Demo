@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechStar - Analisi PDF</title>
+    <style>
+        body {
+            background-color: #f0f2f5;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            flex-direction: column;
+        }
+        #logo-container {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        #logo {
+            width: 150px;
+        }
+        #title {
+            color: #333;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        #app-container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 500px;
+            text-align: center;
+            color: #333;
+        }
+        #upload-box {
+            border: 2px dashed #007bff;
+            padding: 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        #upload-box:hover {
+            background-color: #f0f8ff;
+        }
+        #upload-text {
+            color: #007bff;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 0;
+        }
+        #file-input {
+            display: none;
+        }
+        .loading-text {
+            font-size: 18px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .report-section {
+            text-align: left;
+            margin-top: 20px;
+        }
+        .report-section h3 {
+            color: #555;
+        }
+        .report-section p {
+            margin: 5px 0;
+        }
+        .risk-high { color: #dc3545; font-weight: bold; }
+        .risk-medium { color: #ffc107; font-weight: bold; }
+        .risk-low { color: #28a745; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div id="logo-container">
+        <h1 id="title">TechStar Demo</h1>
+    </div>
+    <div id="app-container">
+        <div id="upload-box">
+            <p id="upload-text">Carica il tuo PDF</p>
+            <input type="file" id="file-input" accept=".pdf">
+        </div>
+        
+        <div id="report-content" style="display:none;">
+            </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const uploadBox = document.getElementById('upload-box');
+        const uploadText = document.getElementById('upload-text');
+        const reportContent = document.getElementById('report-content');
+
+        // Funzione per gestire il caricamento del file
+        uploadBox.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Visualizza il messaggio "Analisi in corso..."
+            uploadText.textContent = 'Analisi in corso...';
+            uploadBox.style.cursor = 'not-allowed';
+            uploadBox.style.borderColor = '#6c757d';
+
+            // Prepara il file per la chiamata API
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                // Fai la chiamata API per l'upload
+                const response = await fetch('http://127.0.0.1:8000/api/v1/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    throw new Error('Errore durante l\'upload del file.');
+                }
+
+                // Attendi il report completo dal backend
+                const reportData = await response.json();
+                
+                // Aggiorna l'interfaccia con il report
+                displayReport(reportData);
+
+            } catch (error) {
+                uploadText.textContent = 'Errore! Riprova.';
+                uploadBox.style.cursor = 'pointer';
+                uploadBox.style.borderColor = '#dc3545';
+                console.error(error);
+            }
+        });
+
+        // Funzione per visualizzare il report
+        function displayReport(report) {
+            uploadBox.style.display = 'none';
+            reportContent.style.display = 'block';
+
+            let html = `
+                <h3>Parere dell'AI</h3>
+                <p>${report.AI_opinion}</p>
+                <hr>
+                <h3>Report di Analisi</h3>
+                <p><strong>Clausole analizzate:</strong> ${report.summary.n_clauses}</p>
+                <p><strong>Clausole a basso rischio:</strong> ${report.summary.n_low}</p>
+                <p><strong>Clausole a medio rischio:</strong> ${report.summary.n_medium}</p>
+                <p><strong>Clausole ad alto rischio:</strong> ${report.summary.n_high}</p>
+                <hr>
+                <h4>Stima Economica</h4>
+                <p><strong>Tempo risparmiato:</strong> ${report.summary.tempo_risparmiato_min} min</p>
+                <p><strong>Costo risparmiato:</strong> €${report.summary.costo_risparmiato_eur}</p>
+                <hr>
+            `;
+            
+            // Aggiunge le clausole al report
+            if (report.clauses.length > 0) {
+                html += `<h4>Clausole Trovate</h4>`;
+                report.clauses.forEach(clause => {
+                    let riskClass = '';
+                    if (clause.risk === 'HIGH') riskClass = 'risk-high';
+                    if (clause.risk === 'MEDIUM') riskClass = 'risk-medium';
+                    if (clause.risk === 'LOW') riskClass = 'risk-low';
+                    
+                    html += `
+                        <p><strong>Rischio:</strong> <span class="${riskClass}">${clause.risk}</span></p>
+                        <p>${clause.text}</p>
+                        <p><strong>Spiegazione:</strong> ${clause.explanation}</p>
+                        <hr>
+                    `;
+                });
+            }
+
+            reportContent.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
