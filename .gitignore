@@ -1,0 +1,19 @@
+# Ignora i file compilati di Python
+__pycache__/
+*.pyc
+
+# Ignora i dati caricati dall'utente
+uploads/
+
+# Ignora la cartella dell'ambiente virtuale
+venv/
+
+# Ignora i file di database temporanei o di configurazione
+*.db
+
+# Se hai una cartella per i test che non vuoi caricare, aggiungila qui
+# test_files/
+
+# Ignora file specifici
+finta_clausola.pdf
+vediamo_i_risultati.pdf
