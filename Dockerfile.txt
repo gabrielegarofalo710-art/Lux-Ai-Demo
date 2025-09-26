@@ -1,0 +1,18 @@
+# Usa un'immagine Python ufficiale come base
+FROM python:3.10-slim
+
+# Imposta la directory di lavoro nel container
+WORKDIR /app
+
+# Copia i file necessari per l'installazione delle dipendenze
+COPY requirements.txt .
+
+# Installa le dipendenze
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copia il resto del tuo codice nel container
+COPY . .
+
+# Comando per avviare il server (che Vercel eseguirà)
+# Usiamo la variabile d'ambiente $PORT che Vercel imposta
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "$PORT"]
